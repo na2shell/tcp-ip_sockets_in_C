@@ -1,0 +1,15 @@
+http_speed_testでapacheに対してcurlでhttpリクエストを送った際に，
+window sizeが2MBになるという現象が発生した．
+
+この本を読んで，その疑問が解消された．
+結論から言うと，apacheのSendQが2MBに制限されているようだ．
+
+curlのRecvQについては，少し自信がないがsetsockoptを使って動的に増やしているような感じがする．
+そのため，おそらくrecv側の上限はカーネルの設定(sysctlでいじれるrmem_max,デフォルトでは6MBちょい)になるはず．
+
+流れとしては，2MBに到達するまでは，フロー制御(curlのrecv側の値)と輻輳制御(tcpが制御)の小さい方の値を採用している．
+その後，curlのrecv側が2MBよりも大きなバッファを用意するようになる．
+しかし，apacheからは2MBずつしか送られてこない
+
+よって大きなファイルをapacheに要求した場合，window sizeは2MBにとどまる．
+ちなみにconfで変更可能らしい
